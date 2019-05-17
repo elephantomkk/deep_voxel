@@ -184,7 +184,7 @@ class DeepVoxels(nn.Module):
             #     param.requires_grad = False
 
             # img_feats = model_conv(input_img) 
-
+            # print("input_img_shape", input_img.shape)
             res50_model = models.resnet50(pretrained=True)
             # res50_model.cuda()
             res50_conv2 = ResNet50Bottom(res50_model)
@@ -198,7 +198,6 @@ class DeepVoxels(nn.Module):
 
             # print("######shape for input_img #####:",input_img.shape)
             # print("######shape for features #####:",img_feats.shape) # 1x64x64x64
-            # quit()
             temp_feat_vol = interpolate_lifting(img_feats, lift_volume_idcs, lift_img_coords, self.grid_dims)
 
             dv_new = self.integration_net(temp_feat_vol, self.deepvoxels.detach(), writer)

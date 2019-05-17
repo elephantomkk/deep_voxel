@@ -45,10 +45,13 @@ class NovelViewTriplets():
         # Buffer files
         print("Buffering files...")
         self.all_views = []
+        self.all_views_nearest =[]
         for i in range(self.__len__()):
             if not i % 10:
                 print(i)
             self.all_views.append(self.read_view_tuple(i))
+            self.all_views_nearest.append(self.read_view_tuple_nearest(i))
+
 
         # Calculate the ranking of nearest neigbors
         self.nn_idcs, _ = data_util.get_nn_ranking([data_util.load_pose(pose) for pose in self.all_poses])
@@ -61,14 +64,33 @@ class NovelViewTriplets():
     def load_rgb(self, path):
         img = data_util.load_img(path, square_crop=True, downsampling_order=1, target_size=self.img_size)
         # print(img.shape)
-        # img = img[:, :, :3].astype(np.float32) / 255. - 0.5
-        # img = img.transpose(2,0,1)
+        img = img[:, :, :3].astype(np.float32) / 255. - 0.5 ###?????
+        # img = img[:, :, :3].astype(np.float32)
+        img = img.transpose(2,0,1)
         # print(img.shape) ### orginial: 512 512 3 ==> 3 512 512
-        img = img.numpy()
+        # img = img.numpy()
+        return img
+
+    def load_rgb_nearest(self, path):
+        img = data_util.load_img(path, square_crop=True, downsampling_order=1, target_size=self.img_size)
+        # print(img.shape)
+        # img = img[:, :, :3].astype(np.float32) / 255. - 0.5 ###?????
+        # img = img[:, :, :3].astype(np.float32)
+        img = img.transpose(2,0,1)
+        # print(img.shape) ### orginial: 512 512 3 ==> 3 512 512
+        # img = img.numpy()
         return img
 
     def read_view_tuple(self, idx):
         gt_rgb = self.load_rgb(self.all_color[idx])
+        pose = data_util.load_pose(self.all_poses[idx])
+
+        this_view = {'gt_rgb': torch.from_numpy(gt_rgb),
+                     'pose': torch.from_numpy(pose)}
+        return this_view
+
+    def read_view_tuple_nearest(self, idx):
+        gt_rgb = self.load_rgb_nearest(self.all_color[idx])
         pose = data_util.load_pose(self.all_poses[idx])
 
         this_view = {'gt_rgb': torch.from_numpy(gt_rgb),
@@ -83,7 +105,7 @@ class NovelViewTriplets():
 
         # Read one target pose and its nearest neighbor
         trgt_views.append(self.all_views[idx])
-        nearest_view = self.all_views[self.nn_idcs[idx][-np.random.randint(low=1, high=5)]]
+        nearest_view = self.all_views_nearest[self.nn_idcs[idx][-np.random.randint(low=1, high=5)]]
 
         # The second target pose is a random one
         trgt_views.append(self.all_views[np.random.choice(len(self))])

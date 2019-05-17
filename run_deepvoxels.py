@@ -14,6 +14,7 @@ from deep_voxels import DeepVoxels
 from projection import ProjectionHelper
 
 from tensorboardX import SummaryWriter
+from torchvision import datasets, models, transforms
 from losses import *
 from data_util import *
 import util
@@ -205,7 +206,32 @@ def train():
 
             proj_frustrum_idcs, proj_grid_coords = list(zip(*proj_mappings))
 
-            outputs, depth_maps = model(nearest_view['gt_rgb'].to(device),
+            ##### change the input size to 224 
+            img = nearest_view['gt_rgb']
+            # print("shape test:" , img.shape)
+            transformations = transforms.Compose([
+                    transforms.Resize(255),
+                    transforms.CenterCrop(224),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+            # img = F.to_pil_image(img)
+            # img = img.numpy()
+            img = transforms.ToPILImage()(img.squeeze())
+            # img.show()
+            img = transformations(img)
+            # img = img[:3, :, :].astype(np.float32)
+            # img = img.type(torch.FloatTensor)
+            # img.show()
+            img = img.unsqueeze(0)
+            # print(img.shape)
+
+            # outputs, depth_maps = model(nearest_view['gt_rgb'].to(device),
+            #                             proj_frustrum_idcs, proj_grid_coords,
+            #                             lift_volume_idcs, lift_img_coords,
+            #                             writer=writer)
+
+            outputs, depth_maps = model(img.to(device),
                                         proj_frustrum_idcs, proj_grid_coords,
                                         lift_volume_idcs, lift_img_coords,
                                         writer=writer)
@@ -217,14 +243,18 @@ def train():
 
             # We don't enforce a loss on the outermost 5 pixels to alleviate boundary errors
             for i in range(len(trgt_views)):
+                # print("test_trgt_view_size:", trgt_views[i]['gt_rgb'].shape)
+                # print("outputs:", outputs[i].shape)
                 outputs[i] = outputs[i][:, :, 5:-5, 5:-5]
                 trgt_views[i]['gt_rgb'] = trgt_views[i]['gt_rgb'][:, :, 5:-5, 5:-5]
 
             l1_losses = list()
             for idx in range(len(trgt_views)):
+                # l1_losses.append(criterionL1(outputs[idx].contiguous().view(-1).float(),
+                #                              trgt_views[idx]['gt_rgb'].to(device).view(-1).float()))
                 l1_losses.append(criterionL1(outputs[idx].contiguous().view(-1).float(),
-                                             trgt_views[idx]['gt_rgb'].to(device).view(-1).float()))
-
+                                             trgt_views[idx]['gt_rgb'].to(device).contiguous().view(-1).float()))
+                
             losses_d = []
             losses_g = []
 
@@ -282,8 +312,11 @@ def train():
                                  torchvision.utils.make_grid(nearest_view['gt_rgb'], scale_each=True,
                                                              normalize=True).detach().numpy(),
                                  iter)
+                # output_vs_gt = torch.cat((torch.cat(outputs, dim=0),
+                #                           torch.cat([i['gt_rgb'].to(device) for i in trgt_views], dim=0)),
+                #                           dim = 0)
                 output_vs_gt = torch.cat((torch.cat(outputs, dim=0),
-                                          torch.cat([i['gt_rgb'].to(device) for i in trgt_views], dim=0)),
+                                          torch.cat([i['gt_rgb'].float().to(device) for i in trgt_views], dim=0)),
                                          dim=0)
                 writer.add_image("Output_vs_gt",
                                  torchvision.utils.make_grid(output_vs_gt,

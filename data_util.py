@@ -38,23 +38,23 @@ def load_img(filepath, target_size=None, anti_aliasing=True, downsampling_order=
     if target_size is not None:
         if downsampling_order == 1:
             img = cv2.resize(img, tuple(target_size), interpolation=cv2.INTER_AREA)
-        # else:
-        #     img = transform.resize(img, target_size,
-        #                            order=downsampling_order,
-        #                            mode='reflect',
-        #                            clip=False, preserve_range=True,
-        #                            anti_aliasing=anti_aliasing)
-            transformations = transforms.Compose([
-                    transforms.Resize(255),
-                    transforms.CenterCrop(224),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-            ])
-            # img = F.to_pil_image(img)
-            img = transforms.ToPILImage()(img)
-            # img.show()
-            img = transformations(img)
-            # print(img.shape)
+        else:
+            img = transform.resize(img, target_size,
+                                   order=downsampling_order,
+                                   mode='reflect',
+                                   clip=False, preserve_range=True,
+                                   anti_aliasing=anti_aliasing)
+            # transformations = transforms.Compose([
+            #         transforms.Resize(255),
+            #         transforms.CenterCrop(224),
+            #         transforms.ToTensor(),
+            #         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            # ])
+            # # img = F.to_pil_image(img)
+            # img = transforms.ToPILImage()(img)
+            # # img.show()
+            # img = transformations(img)
+            # # print(img.shape)
     return img
 
 
